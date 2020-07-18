@@ -36,7 +36,11 @@ class ZipReader(object):
             return zip_bank[path]
         else:
             print("creating new zip_bank ---->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+            import time
+            begin = time.time()
             zfile = zipfile.ZipFile(path, 'r')
+            end = time.time()
+            print('cost time', end-begin)
             print('loading finished')
             zip_bank[path] = zfile
             return zip_bank[path]
