@@ -4,7 +4,7 @@ import mmcv
 import numpy as np
 
 from ..builder import PIPELINES
-
+import mmcv_custom
 
 @PIPELINES.register_module()
 class LoadImageFromFile(object):
@@ -44,8 +44,10 @@ class LoadImageFromFile(object):
         else:
             filename = results['img_info']['filename']
 
-        img_bytes = self.file_client.get(filename)
-        img = mmcv.imfrombytes(img_bytes, flag=self.color_type)
+        # img_bytes = self.file_client.get(filename)
+        # img = mmcv.imfrombytes(img_bytes, flag=self.color_type)
+        img = mmcv_custom.imread(filename, flag=self.color_type)
+
         if self.to_float32:
             img = img.astype(np.float32)
 
