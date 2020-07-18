@@ -4,15 +4,17 @@ import cv2
 import numpy as np
 
 from mmcv.utils import is_str, check_file_exist, mkdir_or_exist
-from mmcv.opencv_info import USE_OPENCV2
+# from mmcv.opencv_info import USE_OPENCV2
 from mmcv_custom.zipreader import ZipReader
 
-if not USE_OPENCV2:
-    from cv2 import IMREAD_COLOR, IMREAD_GRAYSCALE, IMREAD_UNCHANGED
-else:
-    from cv2 import CV_LOAD_IMAGE_COLOR as IMREAD_COLOR
-    from cv2 import CV_LOAD_IMAGE_GRAYSCALE as IMREAD_GRAYSCALE
-    from cv2 import CV_LOAD_IMAGE_UNCHANGED as IMREAD_UNCHANGED
+from cv2 import IMREAD_COLOR, IMREAD_GRAYSCALE, IMREAD_UNCHANGED
+
+# if not USE_OPENCV2:
+#     from cv2 import IMREAD_COLOR, IMREAD_GRAYSCALE, IMREAD_UNCHANGED
+# else:
+#     from cv2 import CV_LOAD_IMAGE_COLOR as IMREAD_COLOR
+#     from cv2 import CV_LOAD_IMAGE_GRAYSCALE as IMREAD_GRAYSCALE
+#     from cv2 import CV_LOAD_IMAGE_UNCHANGED as IMREAD_UNCHANGED
 
 
 imread_flags = {
