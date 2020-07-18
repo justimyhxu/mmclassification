@@ -55,11 +55,12 @@ def parse_args():
         '--autoscale-lr',
         action='store_true',
         help='automatically scale lr with the number of gpus')
-    args = parser.parse_args()
     parser.add_argument('--aml', action='store_true', help='whether to train on aml')
     parser.add_argument('--aml_data_store', default='xuehan', help='aml data_store name')
     parser.add_argument('--aml_work_dir_prefix', default='work_dirs/imagenet/',
                         help='aml work_dir prefix')
+    args = parser.parse_args()
+
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
 
