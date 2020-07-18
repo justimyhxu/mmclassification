@@ -32,7 +32,7 @@ class ImageNet(BaseDataset):
         elif isinstance(self.ann_file, str):
             # with open(self.ann_file) as f:
             #     samples = [x.strip().split(' ') for x in f.readlines()]
-            samples = make_dataset_with_ann(self.ann_file, self.data_prefix, )
+            samples = make_dataset_with_ann(self.ann_file, self.data_prefix, extensions=self.IMG_EXTENSIONS)
         else:
             raise TypeError('ann_file must be a str or None')
         self.samples = samples
