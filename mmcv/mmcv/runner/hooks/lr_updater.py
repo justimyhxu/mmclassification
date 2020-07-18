@@ -5,7 +5,7 @@ from .hook import HOOKS, Hook
 
 
 class LrUpdaterHook(Hook):
-    """LR Scheduler in MMCV.
+    """LR Scheduler in MMCV
 
     Args:
         by_epoch (bool): LR changes epoch by epoch
@@ -224,13 +224,13 @@ class InvLrUpdaterHook(LrUpdaterHook):
 
 
 @HOOKS.register_module()
-class CosineAnnealingLrUpdaterHook(LrUpdaterHook):
+class CosineAnealingLrUpdaterHook(LrUpdaterHook):
 
     def __init__(self, min_lr=None, min_lr_ratio=None, **kwargs):
         assert (min_lr is None) ^ (min_lr_ratio is None)
         self.min_lr = min_lr
         self.min_lr_ratio = min_lr_ratio
-        super(CosineAnnealingLrUpdaterHook, self).__init__(**kwargs)
+        super(CosineAnealingLrUpdaterHook, self).__init__(**kwargs)
 
     def get_lr(self, runner, base_lr):
         if self.by_epoch:
@@ -325,7 +325,7 @@ def get_position_from_periods(iteration, cumulative_periods):
 
 @HOOKS.register_module()
 class CyclicLrUpdaterHook(LrUpdaterHook):
-    """Cyclic LR Scheduler.
+    """Cyclic LR Scheduler
 
     Implement the cyclical learning rate policy (CLR) described in
     https://arxiv.org/pdf/1506.01186.pdf
@@ -341,6 +341,7 @@ class CyclicLrUpdaterHook(LrUpdaterHook):
         step_ratio_up (float): The ratio of the increasing process of LR in
             the total cycle.
         by_epoch (bool): Whether to update LR by epoch.
+
     """
 
     def __init__(self,

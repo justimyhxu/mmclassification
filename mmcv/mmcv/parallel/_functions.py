@@ -4,7 +4,8 @@ from torch.nn.parallel._functions import _get_stream
 
 
 def scatter(input, devices, streams=None):
-    """Scatters tensor across multiple GPUs."""
+    """Scatters tensor across multiple GPUs.
+    """
     if streams is None:
         streams = [None] * len(devices)
 

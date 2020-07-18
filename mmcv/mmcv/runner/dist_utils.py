@@ -8,7 +8,6 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 
 from mmcv.utils import TORCH_VERSION
-from mmcv.utils import gpu_indices, ompi_size, ompi_rank, get_philly_master_ip, get_aml_master_ip
 
 
 def init_dist(launcher, backend='nccl', **kwargs):
@@ -33,42 +32,10 @@ def _init_dist_pytorch(backend, **kwargs):
 
 
 def _init_dist_mpi(backend, **kwargs):
-    gpus = list(gpu_indices())
-    gpu_num = len(gpus)
-    world_size = ompi_size()
-    rank = ompi_rank()
-    # TODO: find a better way to support both philly and AML enviroment
-    if get_aml_master_ip() is not None:
-        dist_url = 'tcp://' + get_aml_master_ip() + ':23456'
-    else:
-        dist_url = 'tcp://' + get_philly_master_ip() + ':23456'
-    torch.cuda.set_device(int(gpus[0]))  # Set current GPU to the first
-    dist.init_process_group(
-        backend=backend,
-        init_method=dist_url,
-        world_size=world_size,
-        rank=rank,
-        group_name='mtorch')
-    print(
-        "World Size is {}, Backend is {}, Init Method is {}, rank is {}, gpu num is{}"
-        .format(world_size, backend, dist_url, ompi_rank(), gpu_num))
-
-
-def _init_dist_mpi(backend, **kwargs):
     raise NotImplementedError
 
 
-def _init_dist_slurm(backend, port=None):
-    """Initialize slurm distributed training environment.
-
-    If argument ``port`` is not specified, then the master port will be system
-    environment variable ``MASTER_PORT``. If ``MASTER_PORT`` is not in system
-    environment variable, then a default port ``29500`` will be used.
-
-    Args:
-        backend (str): Backend of torch.distributed.
-        port (int, optional): Master port. Defaults to None.
-    """
+def _init_dist_slurm(backend, port=29500):
     proc_id = int(os.environ['SLURM_PROCID'])
     ntasks = int(os.environ['SLURM_NTASKS'])
     node_list = os.environ['SLURM_NODELIST']
@@ -76,14 +43,7 @@ def _init_dist_slurm(backend, port=None):
     torch.cuda.set_device(proc_id % num_gpus)
     addr = subprocess.getoutput(
         f'scontrol show hostname {node_list} | head -n1')
-    # specify master port
-    if port is not None:
-        os.environ['MASTER_PORT'] = str(port)
-    elif 'MASTER_PORT' in os.environ:
-        pass  # use MASTER_PORT in the environment variable
-    else:
-        # 29500 is torch.distributed default port
-        os.environ['MASTER_PORT'] = '29500'
+    os.environ['MASTER_PORT'] = str(port)
     os.environ['MASTER_ADDR'] = addr
     os.environ['WORLD_SIZE'] = str(ntasks)
     os.environ['RANK'] = str(proc_id)

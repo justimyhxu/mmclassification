@@ -41,8 +41,3 @@ runner
 ------
 .. automodule:: mmcv.runner
     :members:
-
-ops
-------
-.. automodule:: mmcv.ops
-    :members:

@@ -247,7 +247,7 @@ class BaseRunner(metaclass=ABCMeta):
         """Register a hook into the hook list.
 
         The hook will be inserted into a priority queue, with the specified
-        priority (See :class:`Priority` for details of priorities).
+        priority (See :cls:`Priority` for details of priorities).
         For hooks with the same priority, they will be triggered in the same
         order as they are registered.
 
@@ -313,8 +313,7 @@ class BaseRunner(metaclass=ABCMeta):
             # If the type of policy is all in lower case, e.g., 'cyclic',
             # then its first letter will be capitalized, e.g., to be 'Cyclic'.
             # This is for the convenient usage of Lr updater.
-            # Since this is not applicable for `
-            # CosineAnnealingLrUpdater`,
+            # Since this is not applicable for `CosineAnealingLrUpdater`,
             # the string will not be changed if it contains capital letters.
             if policy_type == policy_type.lower():
                 policy_type = policy_type.title()
@@ -334,8 +333,7 @@ class BaseRunner(metaclass=ABCMeta):
             # If the type of policy is all in lower case, e.g., 'cyclic',
             # then its first letter will be capitalized, e.g., to be 'Cyclic'.
             # This is for the convenient usage of momentum updater.
-            # Since this is not applicable for
-            # `CosineAnnealingMomentumUpdater`,
+            # Since this is not applicable for `CosineAnealingMomentumUpdater`,
             # the string will not be changed if it contains capital letters.
             if policy_type == policy_type.lower():
                 policy_type = policy_type.title()

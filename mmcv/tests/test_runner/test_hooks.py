@@ -1,8 +1,10 @@
-"""Tests the hooks with runners.
+"""
+Tests the hooks with runners.
 
 CommandLine:
     pytest tests/test_hooks.py
     xdoctest tests/test_hooks.py zero
+
 """
 import logging
 import os.path as osp
@@ -18,11 +20,11 @@ from torch.utils.data import DataLoader
 
 from mmcv.runner import (EpochBasedRunner, IterTimerHook, MlflowLoggerHook,
                          PaviLoggerHook, WandbLoggerHook)
-from mmcv.runner.hooks.lr_updater import (CosineAnnealingLrUpdaterHook,
+from mmcv.runner.hooks.lr_updater import (CosineAnealingLrUpdaterHook,
                                           CosineRestartLrUpdaterHook,
                                           CyclicLrUpdaterHook)
 from mmcv.runner.hooks.momentum_updater import (
-    CosineAnnealingMomentumUpdaterHook, CyclicMomentumUpdaterHook)
+    CosineAnealingMomentumUpdaterHook, CyclicMomentumUpdaterHook)
 
 
 def test_pavi_hook():
@@ -47,7 +49,9 @@ def test_pavi_hook():
 
 
 def test_momentum_runner_hook():
-    """xdoctest -m tests/test_hooks.py test_momentum_runner_hook."""
+    """
+    xdoctest -m tests/test_hooks.py test_momentum_runner_hook
+    """
     sys.modules['pavi'] = MagicMock()
     loader = DataLoader(torch.ones((10, 2)))
     runner = _build_demo_runner()
@@ -95,13 +99,15 @@ def test_momentum_runner_hook():
 
 
 def test_cosine_runner_hook():
-    """xdoctest -m tests/test_hooks.py test_cosine_runner_hook."""
+    """
+    xdoctest -m tests/test_hooks.py test_cosine_runner_hook
+    """
     sys.modules['pavi'] = MagicMock()
     loader = DataLoader(torch.ones((10, 2)))
     runner = _build_demo_runner()
 
     # add momentum scheduler
-    hook = CosineAnnealingMomentumUpdaterHook(
+    hook = CosineAnealingMomentumUpdaterHook(
         min_momentum_ratio=0.99 / 0.95,
         by_epoch=False,
         warmup_iters=2,
@@ -109,7 +115,7 @@ def test_cosine_runner_hook():
     runner.register_hook(hook)
 
     # add momentum LR scheduler
-    hook = CosineAnnealingLrUpdaterHook(
+    hook = CosineAnealingLrUpdaterHook(
         by_epoch=False, min_lr_ratio=0, warmup_iters=2, warmup_ratio=0.9)
     runner.register_hook(hook)
     runner.register_hook(IterTimerHook())

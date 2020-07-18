@@ -2,15 +2,13 @@ import warnings
 
 import torch.nn as nn
 
-from ..utils import constant_init, kaiming_init
+from ..weight_init import constant_init, kaiming_init
 from .activation import build_activation_layer
 from .conv import build_conv_layer
 from .norm import build_norm_layer
 from .padding import build_padding_layer
-from .registry import PLUGIN_LAYERS
 
 
-@PLUGIN_LAYERS.register_module()
 class ConvModule(nn.Module):
     """A conv block that bundles conv/norm/activation layers.
 
@@ -55,8 +53,6 @@ class ConvModule(nn.Module):
             ("conv", "norm", "act") and ("act", "conv", "norm").
             Default: ('conv', 'norm', 'act').
     """
-
-    _abbr_ = 'conv_block'
 
     def __init__(self,
                  in_channels,
@@ -144,9 +140,7 @@ class ConvModule(nn.Module):
         if self.with_activation:
             act_cfg_ = act_cfg.copy()
             # nn.Tanh has no 'inplace' argument
-            if act_cfg_['type'] not in [
-                    'Tanh', 'PReLU', 'Sigmoid', 'HSigmoid'
-            ]:
+            if act_cfg_['type'] not in ['Tanh', 'PReLU', 'Sigmoid']:
                 act_cfg_.setdefault('inplace', inplace)
             self.activate = build_activation_layer(act_cfg_)
 

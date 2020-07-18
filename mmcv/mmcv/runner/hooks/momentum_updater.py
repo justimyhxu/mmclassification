@@ -103,13 +103,13 @@ class MomentumUpdaterHook(Hook):
 
 
 @HOOKS.register_module()
-class CosineAnnealingMomentumUpdaterHook(MomentumUpdaterHook):
+class CosineAnealingMomentumUpdaterHook(MomentumUpdaterHook):
 
     def __init__(self, min_momentum=None, min_momentum_ratio=None, **kwargs):
         assert (min_momentum is None) ^ (min_momentum_ratio is None)
         self.min_momentum = min_momentum
         self.min_momentum_ratio = min_momentum_ratio
-        super(CosineAnnealingMomentumUpdaterHook, self).__init__(**kwargs)
+        super(CosineAnealingMomentumUpdaterHook, self).__init__(**kwargs)
 
     def get_momentum(self, runner, base_momentum):
         if self.by_epoch:
@@ -128,7 +128,7 @@ class CosineAnnealingMomentumUpdaterHook(MomentumUpdaterHook):
 
 @HOOKS.register_module()
 class CyclicMomentumUpdaterHook(MomentumUpdaterHook):
-    """Cyclic momentum Scheduler.
+    """Cyclic momentum Scheduler
 
     Implemet the cyclical momentum scheduler policy described in
     https://arxiv.org/pdf/1708.07120.pdf
@@ -143,6 +143,7 @@ class CyclicMomentumUpdaterHook(MomentumUpdaterHook):
         step_ratio_up (float): The ratio of the increasing process of momentum
             in  the total cycle.
         by_epoch (bool): Whether to update momentum by epoch.
+
     """
 
     def __init__(self,
