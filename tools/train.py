@@ -14,7 +14,7 @@ from mmcls.apis import set_random_seed, train_model
 from mmcls.datasets import build_dataset
 from mmcls.models import build_classifier
 from mmcls.utils import collect_env, get_root_logger
-
+import torch.distributed as dist
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a model')
@@ -109,16 +109,22 @@ def main():
     else:
         cfg.gpu_ids = range(1) if args.gpus is None else range(args.gpus)
 
-    if args.autoscale_lr:
-        # apply the linear scaling rule (https://arxiv.org/abs/1706.02677)
-        cfg.optimizer['lr'] = cfg.optimizer['lr'] * cfg.gpus / 8 * cfg.data.imgs_per_gpu / 32
-
-    # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
         distributed = False
     else:
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
+
+    # update gpu num
+    if dist.is_initialized():
+        cfg.gpus = dist.get_world_size()
+    else:
+        cfg.gpus = args.gpus
+
+    if args.autoscale_lr:
+        # apply the linear scaling rule (https://arxiv.org/abs/1706.02677)
+
+        cfg.optimizer['lr'] = cfg.optimizer['lr'] * cfg.gpus / 8 * cfg.data.samples_per_gpu / 32
 
     # create work_dir
     mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
