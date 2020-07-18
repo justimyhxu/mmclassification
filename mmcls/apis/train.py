@@ -9,7 +9,7 @@ from mmcls.core import (DistEvalHook, DistOptimizerHook, EvalHook,
                         Fp16OptimizerHook)
 from mmcls.datasets import build_dataloader, build_dataset
 from mmcls.utils import get_root_logger
-
+from mmcv_custom import Runner
 
 def set_random_seed(seed, deterministic=False):
     """Set random seed.
@@ -70,7 +70,7 @@ def train_model(model,
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
-    runner = EpochBasedRunner(
+    runner = Runner(
         model,
         optimizer=optimizer,
         work_dir=cfg.work_dir,

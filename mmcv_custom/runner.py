@@ -7,7 +7,7 @@ import torch
 from .parameters import parameters
 
 
-class Runner(mmcv.runner.Runner):
+class Runner(mmcv.runner.EpochBasedRunner):
     """A training helper for PyTorch.
 
         Custom version of mmcv runner, overwrite init_optimizer method
