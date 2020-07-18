@@ -30,8 +30,9 @@ class ImageNet(BaseDataset):
             self.CLASSES = classes
             self.class_to_idx = class_to_idx
         elif isinstance(self.ann_file, str):
-            with open(self.ann_file) as f:
-                samples = [x.strip().split(' ') for x in f.readlines()]
+            # with open(self.ann_file) as f:
+            #     samples = [x.strip().split(' ') for x in f.readlines()]
+            samples = make_dataset_with_ann(self.ann_file, self.data_prefix, )
         else:
             raise TypeError('ann_file must be a str or None')
         self.samples = samples
@@ -100,5 +101,20 @@ def make_dataset(root, class_to_idx, extensions):
                     path = os.path.join(class_name, fn)
                     item = (path, class_to_idx[class_name])
                     images.append(item)
+
+    return images
+
+def make_dataset_with_ann(ann_file, img_prefix, extensions):
+    images = []
+    with open(ann_file, "r") as f:
+        contents = f.readlines()
+        for line_str in contents:
+            path_contents = [c for c in line_str.split('\t')]
+            im_file_name = path_contents[0]
+            class_index = int(path_contents[1])
+
+            if has_file_allowed_extension(im_file_name, extensions):
+                item = (os.path.join(img_prefix, im_file_name), class_index)
+                images.append(item)
 
     return images
