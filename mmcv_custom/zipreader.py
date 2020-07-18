@@ -5,14 +5,16 @@ import cv2
 import numpy as np
 
 from mmcv.utils import is_str
-from mmcv.opencv_info import USE_OPENCV2
+from cv2 import IMREAD_COLOR, IMREAD_GRAYSCALE, IMREAD_UNCHANGED
 
-if not USE_OPENCV2:
-    from cv2 import IMREAD_COLOR, IMREAD_GRAYSCALE, IMREAD_UNCHANGED
-else:
-    from cv2 import CV_LOAD_IMAGE_COLOR as IMREAD_COLOR
-    from cv2 import CV_LOAD_IMAGE_GRAYSCALE as IMREAD_GRAYSCALE
-    from cv2 import CV_LOAD_IMAGE_UNCHANGED as IMREAD_UNCHANGED
+# from mmcv.opencv_info import USE_OPENCV2
+
+# if not USE_OPENCV2:
+#     from cv2 import IMREAD_COLOR, IMREAD_GRAYSCALE, IMREAD_UNCHANGED
+# else:
+#     from cv2 import CV_LOAD_IMAGE_COLOR as IMREAD_COLOR
+#     from cv2 import CV_LOAD_IMAGE_GRAYSCALE as IMREAD_GRAYSCALE
+#     from cv2 import CV_LOAD_IMAGE_UNCHANGED as IMREAD_UNCHANGED
 
 imread_flags = {
     'color': IMREAD_COLOR,
