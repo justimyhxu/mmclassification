@@ -66,6 +66,8 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+    import IPython
+    IPython.embed()
     if args.options is not None:
         cfg.merge_from_dict(args.options)
     # set cudnn_benchmark

@@ -99,8 +99,8 @@ class ZipReader(object):
     @staticmethod
     def read(path):
         zip_path, path_img = ZipReader.split_zip_style_path(path)
-        suffix = zip_path.split('/')[-1][:-4]
-        path_img = suffix + '/' + path_img
+        # suffix = zip_path.split('/')[-1][:-4]
+        # path_img = suffix + '/' + path_img
 
         zfile = ZipReader.get_zipfile(zip_path)
         data = zfile.read(path_img)

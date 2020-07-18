@@ -114,7 +114,7 @@ def make_dataset_with_ann(ann_file, img_prefix, extensions):
             class_index = int(path_contents[1])
 
             if has_file_allowed_extension(im_file_name, extensions):
-                item = (os.path.join(img_prefix, im_file_name), class_index)
+                item = (im_file_name, class_index)
                 images.append(item)
 
     return images

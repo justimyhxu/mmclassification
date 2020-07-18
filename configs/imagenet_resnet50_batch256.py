@@ -1,6 +1,6 @@
 _base_ = [
-    '../_base_/models/resnet50.py', '../_base_/datasets/imagenet_bs32.py',
-    '../_base_/schedules/imagenet_bs256.py', '../_base_/default_runtime.py'
+    './_base_/models/resnet50.py', './_base_/datasets/imagenet_bs32.py',
+    './_base_/schedules/imagenet_bs256.py', './_base_/default_runtime.py'
 ]
 
 # dataset settings
@@ -26,7 +26,7 @@ test_pipeline = [
     dict(type='Collect', keys=['img', 'gt_label'])
 ]
 data = dict(
-    samples_per_gpu=32,
+    samples_per_gpu=64,
     workers_per_gpu=2,
     train=dict(
         type=dataset_type,
@@ -45,3 +45,9 @@ data = dict(
         ann_file='data/imagenet/meta/val.txt',
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='accuracy')
+# optimizer
+optimizer = dict(type='SGD', lr=0.2, momentum=0.9, weight_decay=0.0001)
+optimizer_config = dict(grad_clip=None)
+# learning policy
+lr_config = dict(policy='step', step=[30, 60, 90])
+total_epochs = 100
