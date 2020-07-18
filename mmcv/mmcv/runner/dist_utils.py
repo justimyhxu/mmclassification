@@ -7,7 +7,7 @@ import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
-from mmcv.utils import TORCH_VERSION
+from mmcv.utils import TORCH_VERSION, gpu_indices, ompi_size, ompi_rank, get_philly_master_ip, get_aml_master_ip
 
 
 def init_dist(launcher, backend='nccl', **kwargs):
@@ -32,7 +32,25 @@ def _init_dist_pytorch(backend, **kwargs):
 
 
 def _init_dist_mpi(backend, **kwargs):
-    raise NotImplementedError
+    gpus = list(gpu_indices())
+    gpu_num = len(gpus)
+    world_size = ompi_size()
+    rank = ompi_rank()
+    # TODO: find a better way to support both philly and AML enviroment
+    if get_aml_master_ip() is not None:
+        dist_url = 'tcp://' + get_aml_master_ip() + ':23456'
+    else:
+        dist_url = 'tcp://' + get_philly_master_ip() + ':23456'
+    torch.cuda.set_device(int(gpus[0]))  # Set current GPU to the first
+    dist.init_process_group(
+        backend=backend,
+        init_method=dist_url,
+        world_size=world_size,
+        rank=rank,
+        group_name='mtorch')
+    print(
+        "World Size is {}, Backend is {}, Init Method is {}, rank is {}, gpu num is{}"
+        .format(world_size, backend, dist_url, ompi_rank(), gpu_num))
 
 
 def _init_dist_slurm(backend, port=29500):

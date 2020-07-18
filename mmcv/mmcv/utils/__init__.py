@@ -18,6 +18,9 @@ from .progressbar import (ProgressBar, track_iter_progress,
                           track_parallel_progress, track_progress)
 from .registry import Registry, build_from_cfg
 from .timer import Timer, TimerError, check_time
+from .distributed import gpu_indices, ompi_size, ompi_rank
+from .philly_env import get_philly_master_ip, get_git_hash
+from .aml_env import get_aml_master_ip
 
 __all__ = [
     'Config', 'ConfigDict', 'DictAction', 'get_logger', 'print_log', 'is_str',
@@ -31,5 +34,11 @@ __all__ = [
     '_AvgPoolNd', '_BatchNorm', '_ConvNd', '_ConvTransposeMixin',
     '_InstanceNorm', '_MaxPoolNd', 'get_build_config', 'BuildExtension',
     'CppExtension', 'CUDAExtension', 'DataLoader', 'PoolDataLoader',
-    'TORCH_VERSION'
+    'TORCH_VERSION',
+    'gpu_indices',
+    'ompi_size',
+    'ompi_rank',
+    'get_philly_master_ip',
+    'get_aml_master_ip',
+    'get_git_hash',
 ]
