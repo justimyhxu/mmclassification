@@ -56,32 +56,51 @@ def parse_args():
         action='store_true',
         help='automatically scale lr with the number of gpus')
     args = parser.parse_args()
+    parser.add_argument('--aml', action='store_true', help='whether to train on aml')
+    parser.add_argument('--aml_data_store', default='xuehan', help='aml data_store name')
+    parser.add_argument('--aml_work_dir_prefix', default='work_dirs/imagenet/',
+                        help='aml work_dir prefix')
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
 
     return args
 
+def parse(cfg, root):
+    for x,v in cfg.items():
+        if isinstance(v,mmcv.utils.config.ConfigDict):
+            parse(v, root)
+        else:
+            if 'data/imagenet' in str(v):
+                cfg[x] = os.path.join(root, v)
 
 def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
-    import IPython
-    IPython.embed()
+
     if args.options is not None:
         cfg.merge_from_dict(args.options)
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
 
-    # work_dir is determined in this priority: CLI > segment in file > filename
-    if args.work_dir is not None:
-        # update configs according to CLI args if args.work_dir is not None
-        cfg.work_dir = args.work_dir
-    elif cfg.get('work_dir', None) is None:
-        # use config filename as default work_dir if cfg.work_dir is None
-        cfg.work_dir = osp.join('./work_dirs',
-                                osp.splitext(osp.basename(args.config))[0])
+    if args.aml:
+        data_store = os.environ['AZUREML_DATAREFERENCE_{}'.format(args.aml_data_store)]
+        parse(cfg, data_store)
+        if cfg.resume_from is not None:
+            cfg.resume_from = os.path.join(data_store, args.aml_work_dir_prefix, cfg.resume_from)
+        cfg.work_dir = os.path.join(data_store, args.aml_work_dir_prefix, cfg.work_dir)
+        print('work_dir: ', cfg.work_dir)
+
+    if not args.aml:
+        # work_dir is determined in this priority: CLI > segment in file > filename
+        if args.work_dir is not None:
+            # update configs according to CLI args if args.work_dir is not None
+            cfg.work_dir = args.work_dir
+        elif cfg.get('work_dir', None) is None:
+            # use config filename as default work_dir if cfg.work_dir is None
+            cfg.work_dir = osp.join('./work_dirs',
+                                    osp.splitext(osp.basename(args.config))[0])
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
     if args.gpu_ids is not None:
@@ -91,7 +110,7 @@ def main():
 
     if args.autoscale_lr:
         # apply the linear scaling rule (https://arxiv.org/abs/1706.02677)
-        cfg.optimizer['lr'] = cfg.optimizer['lr'] * len(cfg.gpu_ids) / 8
+        cfg.optimizer['lr'] = cfg.optimizer['lr'] * cfg.gpus / 8 * cfg.data.imgs_per_gpu / 32
 
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':

@@ -46,8 +46,9 @@ data = dict(
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='accuracy')
 # optimizer
-optimizer = dict(type='SGD', lr=0.2, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(policy='step', step=[30, 60, 90])
 total_epochs = 100
+work_dir = 'imagenet_resnet50_batch256'
