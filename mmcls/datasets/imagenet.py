@@ -43,8 +43,12 @@ class ImageNet(BaseDataset):
             info['img_info'] = {'filename': filename}
             info['gt_label'] = np.array(gt_label, dtype=np.int64)
             data_infos.append(info)
-        return data_infos
-
+        debug = os.environ.get('Debug', 0)
+        debug = int(debug)
+        if debug == 0: 
+            return data_infos
+        else:
+            return data_infos[:2000]
 
 def has_file_allowed_extension(filename, extensions):
     """Checks if a file is an allowed extension.

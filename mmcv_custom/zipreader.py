@@ -35,7 +35,6 @@ class ZipReader(object):
         if path in zip_bank:
             return zip_bank[path]
         else:
-            print("creating new zip_bank ---->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
             import time
             begin = time.time()
             zfile = zipfile.ZipFile(path, 'r')

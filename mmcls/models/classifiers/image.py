@@ -7,7 +7,7 @@ from .base import BaseClassifier
 @CLASSIFIERS.register_module()
 class ImageClassifier(BaseClassifier):
 
-    def __init__(self, backbone, neck=None, head=None, pretrained=None):
+    def __init__(self, backbone, neck=None, head=None, pretrained=None, frozen_backbone=True):
         super(ImageClassifier, self).__init__()
         self.backbone = build_backbone(backbone)
 
@@ -17,11 +17,11 @@ class ImageClassifier(BaseClassifier):
         if head is not None:
             self.head = build_head(head)
 
-        self.init_weights(pretrained=pretrained)
+        self.init_weights(pretrained=pretrained, frozen_backbone=frozen_backbone)
 
-    def init_weights(self, pretrained=None):
+    def init_weights(self, pretrained=None, frozen_backbone=False):
         super(ImageClassifier, self).init_weights(pretrained)
-        self.backbone.init_weights(pretrained=pretrained)
+        self.backbone.init_weights(pretrained=pretrained, frozen=frozen_backbone)
         if self.with_neck:
             if isinstance(self.neck, nn.Sequential):
                 for m in self.neck:

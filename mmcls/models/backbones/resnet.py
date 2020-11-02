@@ -569,24 +569,6 @@ class ResNet(BaseBackbone):
             self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-    def _freeze_stages(self):
-        if self.frozen_stages >= 0:
-            if self.deep_stem:
-                self.stem.eval()
-                for param in self.stem.parameters():
-                    param.requires_grad = False
-            else:
-                self.norm1.eval()
-                for m in [self.conv1, self.norm1]:
-                    for param in m.parameters():
-                        param.requires_grad = False
-
-        for i in range(1, self.frozen_stages + 1):
-            m = getattr(self, f'layer{i}')
-            m.eval()
-            for param in m.parameters():
-                param.requires_grad = False
-
     def init_weights(self, pretrained=None):
         super(ResNet, self).init_weights(pretrained)
         if pretrained is None:
