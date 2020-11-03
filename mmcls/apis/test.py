@@ -29,7 +29,7 @@ def single_gpu_test(model, data_loader, show=False, out_dir=None):
     return results
 
 
-def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
+def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False, show_progress=True):
     """Test model with multiple gpus.
 
     This method tests model with multiple gpus and collects the results
@@ -52,7 +52,7 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     results = []
     dataset = data_loader.dataset
     rank, world_size = get_dist_info()
-    if rank == 0:
+    if rank == 0 and show_progress:
         prog_bar = mmcv.ProgressBar(len(dataset))
     time.sleep(2)  # This line can prevent deadlock problem in some cases.
     for i, data in enumerate(data_loader):
@@ -60,7 +60,7 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
             result = model(return_loss=True, **data)
         results.append(result)
 
-        if rank == 0:
+        if rank == 0 and show_progress:
             batch_size = data['img'].size(0)
             for _ in range(batch_size * world_size):
                 prog_bar.update()

@@ -68,7 +68,8 @@ class DistEvalHook(EvalHook):
             runner.model,
             self.dataloader,
             tmpdir=osp.join(runner.work_dir, '.eval_hook'),
-            gpu_collect=self.gpu_collect)
+            gpu_collect=self.gpu_collect,
+            show_progress=self.eval_kwargs.get('show_progress', True))
         if runner.rank == 0:
             print('\n')
             self.evaluate(runner, results)

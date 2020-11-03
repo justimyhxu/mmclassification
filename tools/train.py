@@ -68,6 +68,9 @@ def parse_args():
 
 def parse(cfg, root):
     for x,v in cfg.items():
+        if 'prefix' in str(x):
+            v = v + '.zip@/'
+
         if isinstance(v,mmcv.utils.config.ConfigDict):
             parse(v, root)
         else:
@@ -85,6 +88,14 @@ def main():
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
 
+    if args.work_dir is not None:
+        # update configs according to CLI args if args.work_dir is not None
+        cfg.work_dir = args.work_dir
+    elif cfg.get('work_dir', None) is None:
+        # use config filename as default work_dir if cfg.work_dir is None
+        cfg.work_dir = osp.join('./work_dirs',
+                                    osp.splitext(osp.basename(args.config))[0])
+
     if args.aml:
         data_store = os.environ['AZUREML_DATAREFERENCE_{}'.format(args.aml_data_store)]
         parse(cfg, data_store)
@@ -92,16 +103,17 @@ def main():
             cfg.resume_from = os.path.join(data_store, args.aml_work_dir_prefix, cfg.resume_from)
         cfg.work_dir = os.path.join(data_store, args.aml_work_dir_prefix, cfg.work_dir)
         print('work_dir: ', cfg.work_dir)
-
-    if not args.aml:
-        # work_dir is determined in this priority: CLI > segment in file > filename
-        if args.work_dir is not None:
-            # update configs according to CLI args if args.work_dir is not None
-            cfg.work_dir = args.work_dir
-        elif cfg.get('work_dir', None) is None:
-            # use config filename as default work_dir if cfg.work_dir is None
-            cfg.work_dir = osp.join('./work_dirs',
-                                    osp.splitext(osp.basename(args.config))[0])
+        if 'data' in cfg.model.pretrained:
+            cfg.model.pretrained = os.path.join(data_store, cfg.model.pretrained)
+    # if not args.aml:
+    #     # work_dir is determined in this priority: CLI > segment in file > filename
+    #     if args.work_dir is not None:
+    #         # update configs according to CLI args if args.work_dir is not None
+    #         cfg.work_dir = args.work_dir
+    #     elif cfg.get('work_dir', None) is None:
+    #         # use config filename as default work_dir if cfg.work_dir is None
+    #         cfg.work_dir = osp.join('./work_dirs',
+    #                                 osp.splitext(osp.basename(args.config))[0])
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
     if args.gpu_ids is not None:

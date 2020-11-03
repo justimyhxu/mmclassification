@@ -45,7 +45,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
     def __getitem__(self, idx):
         return self.prepare_data(idx)
 
-    def evaluate(self, results, metric='accuracy', logger=None):
+    def evaluate(self, results, metric='accuracy', logger=None, **kwargs):
         """Evaluate the dataset.
 
         Args:
