@@ -1,4 +1,5 @@
 import torch
+import logging
 from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
@@ -293,6 +294,7 @@ class CodeHead(nn.Module):
 
         return latent
 
+@BACKBONES.register_module()
 class ResNetOfficial(nn.Module):
     arch_settings = {
         18: (BasicBlock, (2, 2, 2, 2, 1)),
@@ -539,8 +541,7 @@ class ResNetOfficial(nn.Module):
             # group adain
             latent_w = torch.cat([latent_w0, latent_w1, latent_w2], dim=1)
         else:
-            raise NotImplementedError 
-
+            latent_w = init_inputs
         # x = self.avgpool(x)
         # x = torch.flatten(x, 1)
         # x = self.fc(x)
@@ -564,6 +565,7 @@ class ResNetOfficial(nn.Module):
                 # trick: eval have effect on BatchNorm only
                 if isinstance(m, _BatchNorm):
                     m.eval()
+ResNet = ResNetOfficial
 def _resnet(
     arch: str,
     block: Type[Union[BasicBlock, Bottleneck]],
