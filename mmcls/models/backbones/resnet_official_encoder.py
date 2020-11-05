@@ -272,16 +272,20 @@ class CodeHead(nn.Module):
         norm_layer=nn.BatchNorm2d):
         super().__init__()  
         self.fc = nn.Linear(in_planes, latent_size, bias=True)
-        self.norm = norm_layer(latent_size)
+        if norm_layer is None:
+            self.norm = nn.Identity()
+        else:
+            self.norm = norm_layer(latent_size)
 
         self.pth_to_tf_var_mapping = {}
 
         self.pth_to_tf_var_mapping[f'fc.weight'] = f'weight'            
         self.pth_to_tf_var_mapping[f'fc.bias'] = f'bias'            
-        self.pth_to_tf_var_mapping[f'norm.weight'] = f'batch_norm/gamma'
-        self.pth_to_tf_var_mapping[f'norm.bias'] = f'batch_norm/beta'
-        self.pth_to_tf_var_mapping[f'norm.running_var'] = f'batch_norm/moving_variance'
-        self.pth_to_tf_var_mapping[f'norm.running_mean'] = f'batch_norm/moving_mean'
+        if norm_layer is not None:
+            self.pth_to_tf_var_mapping[f'norm.weight'] = f'batch_norm/gamma'
+            self.pth_to_tf_var_mapping[f'norm.bias'] = f'batch_norm/beta'
+            self.pth_to_tf_var_mapping[f'norm.running_var'] = f'batch_norm/moving_variance'
+            self.pth_to_tf_var_mapping[f'norm.running_mean'] = f'batch_norm/moving_mean'
 
     def forward(
         self,
@@ -318,6 +322,8 @@ class ResNetOfficial(nn.Module):
         with_fpn = True,
         with_ds_fuse = True,
         multi_level = True,
+        use_relu = False,
+        wo_bn = False,
         frozen = True,
         norm_eval = True,
         pretrained = None,
@@ -346,7 +352,11 @@ class ResNetOfficial(nn.Module):
         self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=0,
                                bias=False)
         self.bn1 = norm_layer(self.inplanes)
-        self.relu = nn.LeakyReLU(negative_slope=0.2, inplace=False)
+        if use_relu:
+            self.relu = nn.ReLU(inplace=False)
+        else:
+            self.relu = nn.LeakyReLU(negative_slope=0.2, inplace=False)
+        self.use_relu = use_relu
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2)
 
         self.pth_to_tf_var_mapping['conv1.weight'] = ('Conv0/weight')
@@ -395,9 +405,11 @@ class ResNetOfficial(nn.Module):
         if self.multi_level:
             max_length = 1024
             self.dsize = [max_length] * 8 + [max_length // 2] * 2 + [max_length // 4] * 2 + [max_length // 8] * 2
-            self.low_level = CodeHead(in_planes=2048*4*4, latent_size=sum(self.dsize[:4])) 
-            self.mid_level = CodeHead(in_planes=2048*4*4, latent_size=sum(self.dsize[4:8])) 
-            self.high_level = CodeHead(in_planes=2048*4*4, latent_size=sum(self.dsize[8:])) 
+            norm_l = nn.BatchNorm2d if not wo_bn else None
+            inp = 2048*4*4 if not self.use_relu else 2048
+            self.low_level = CodeHead(inp, latent_size=sum(self.dsize[:4]), norm_layer=norm_l) 
+            self.mid_level = CodeHead(inp, latent_size=sum(self.dsize[4:8]), norm_layer=norm_l) 
+            self.high_level = CodeHead(inp, latent_size=sum(self.dsize[8:]), norm_layer=norm_l) 
             
             level_mapping = dict(low_level='LowLevel',
                                  mid_level='MediaLevel',
@@ -520,6 +532,9 @@ class ResNetOfficial(nn.Module):
 
         # inputs = self.dfuse(inputs)
         # res4, res5, res6 = inputs
+        if self.use_relu:
+            res6 = F.adaptive_avg_pool2d(res6, (1,1))
+
         if self.multi_level:
             latent_w0 = self.low_level(res6)
             latent_w0 = latent_w0.reshape(-1, 4, self.dsize[0])            
@@ -552,11 +567,14 @@ class ResNetOfficial(nn.Module):
             return latent_w
 
     def forward(self, x: Tensor) -> Tensor:
-        
-        init_inputs, conv1, bn1, relu1, down1, res1, res2, res3, res4, res5, res6, latent_w =  self._forward_impl(x)
-        res6_gp = F.adaptive_avg_pool2d(res6, (1,1))
-        neck_f = torch.flatten(res6_gp, 1) 
-        return neck_f
+        import os
+        if int(os.environ.get('debug', 0))==0:
+            init_inputs, conv1, bn1, relu1, down1, res1, res2, res3, res4, res5, res6, latent_w =  self._forward_impl(x)
+            res6_gp = F.adaptive_avg_pool2d(res6, (1,1))
+            neck_f = torch.flatten(res6_gp, 1) 
+            return neck_f
+        else:
+            return self._forward_impl(x)
 
     def train(self, mode=True):
         super(ResNetOfficial, self).train(mode)
@@ -565,6 +583,8 @@ class ResNetOfficial(nn.Module):
                 # trick: eval have effect on BatchNorm only
                 if isinstance(m, _BatchNorm):
                     m.eval()
+
+
 ResNet = ResNetOfficial
 def _resnet(
     arch: str,
