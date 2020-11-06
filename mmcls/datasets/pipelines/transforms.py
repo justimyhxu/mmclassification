@@ -3,9 +3,32 @@ import random
 
 import mmcv
 import numpy as np
-
+import torchvision.transforms as transforms
+import matplotlib.pyplot as plt
+from PIL import Image
+import cv2
 from ..builder import PIPELINES
 
+@PIPELINES.register_module()
+class ColorJitter(object):
+    def __init__(self, bcsh):
+        self.bcsh = bcsh
+        self.trans = transforms.ColorJitter(*bcsh)
+
+    def __call__(self, results):
+        for key in results.get('img_fields', ['img']):
+            img = results[key]
+            PIL_img = Image.fromarray(cv2.cvtColor(img,cv2.COLOR_BGR2RGB))  
+            PIL_img = self.trans(PIL_img)
+            img = cv2.cvtColor(np.asarray(PIL_img),cv2.COLOR_RGB2BGR) 
+            results[key] = img
+        return results
+    
+    def __repr__(self):
+        format_string = self.__class__.__name__ + '('
+        a,b,c,d = self.bcsh
+        format_string += f'brightness={a},contrast={b},saturation={c},hue={d}'
+        return format_string
 
 @PIPELINES.register_module()
 class RandomCrop(object):
