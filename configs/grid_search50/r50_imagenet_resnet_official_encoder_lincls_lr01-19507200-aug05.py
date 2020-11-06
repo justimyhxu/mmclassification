@@ -5,7 +5,7 @@ _base_ = [
 
 model = dict(
     type='ImageClassifier',
-    pretrained='data/resnet50-encoder-pretrained-12354560-gp-wobn.pth',
+    pretrained='data/resnet50-encoder-pretrained-19507200.pth',
     frozen_backbone=True,
     backbone=dict(
         type='ResNetOfficial',
@@ -15,8 +15,6 @@ model = dict(
         with_ds_fuse=False,
         multi_level=False,
         norm_eval=True,
-        use_relu=True,
-        wo_bn=True, 
         ),
     head=dict(
         type='LinearClsHead',
@@ -33,7 +31,7 @@ img_norm_cfg = dict(
     mean=[255/2., 255/2., 255/2.,], std=[255/2., 255/2., 255/2.], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='RandomResizedCrop', size=256, scale=(0.25, 1), ratio=(1.00, 1.00)),
+    dict(type='RandomResizedCrop', size=256, scale=(0.5, 1.0), ratio=(3. / 4., 4. / 3.)),
     dict(type='RandomFlip', flip_prob=0.5, direction='horizontal'),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='ImageToTensor', keys=['img']),
@@ -88,7 +86,7 @@ workflow = [('train', 1)]
 
 evaluation = dict(interval=1, metric='accuracy')
 # optimizer
-optimizer = dict(type='SGD', lr=1, momentum=0.9, weight_decay=0)
+optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0)
 optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(policy='step', step=[60, 80])
