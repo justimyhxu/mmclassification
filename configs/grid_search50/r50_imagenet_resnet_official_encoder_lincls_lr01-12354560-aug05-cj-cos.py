@@ -92,7 +92,7 @@ optimizer_config = dict(grad_clip=None)
 # learning policy
 # lr_config = dict(policy='step', step=[60, 80])
 lr_config = dict(
-    policy='CosineAnnealing',
+    policy='CosineAnealing',
     min_lr=0,
     warmup='linear',
     warmup_iters=10000,
