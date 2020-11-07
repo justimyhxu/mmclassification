@@ -16,6 +16,30 @@ class EpochBasedRunner(BaseRunner):
 
     This runner train models epoch by epoch.
     """
+    def get_module(self, model):
+        """Handles distributed model."""
+        if hasattr(model, 'module'):
+            return model.module
+        return model
+
+    def moving_average_model(self, model, avg_model, beta=0.9999):
+        """Moving average model weights.
+        This trick is commonly used in GAN training, where the weight of the
+        generator is life-long averaged
+        Args:
+            model: The latest model used to update the averaged weights.
+            avg_model: The averaged model weights.
+            beta: Hyper-parameter used for moving average.
+        """
+        model_params = dict(self.get_module(model).named_parameters())
+        avg_params = dict(self.get_module(avg_model).named_parameters())
+
+        assert len(model_params) == len(avg_params)
+        for param_name in avg_params:
+            assert param_name in model_params
+            avg_params[param_name].data = (
+                avg_params[param_name].data * beta +
+                model_params[param_name].data * (1 - beta))
 
     def train(self, data_loader, **kwargs):
         self.model.train()
@@ -40,6 +64,8 @@ class EpochBasedRunner(BaseRunner):
                 self.log_buffer.update(outputs['log_vars'],
                                        outputs['num_samples'])
             self.outputs = outputs
+            if self.ema_model is not None:
+                self.moving_average_model(model=self.model, avg_model=self.ema_model, beta=self.ema_cfg.get('beta', 0.9999))
             self.call_hook('after_train_iter')
             self._iter += 1
 
@@ -57,11 +83,19 @@ class EpochBasedRunner(BaseRunner):
             self.call_hook('before_val_iter')
             with torch.no_grad():
                 if self.batch_processor is None:
-                    outputs = self.model.val_step(data_batch, self.optimizer,
-                                                  **kwargs)
+                    if self.ema_model is None:
+                        outputs = self.model.val_step(data_batch, self.optimizer,
+                                                      **kwargs)
+                    else:
+                        outputs = self.ema_model.val_step(data_batch, self.optimizer,
+                                                      **kwargs)
                 else:
-                    outputs = self.batch_processor(
-                        self.model, data_batch, train_mode=False, **kwargs)
+                    if self.ema_model is None:
+                        outputs = self.batch_processor(
+                            self.model, data_batch, train_mode=False, **kwargs)
+                    else:
+                        outputs = self.batch_processor(
+                            self.ema_model, data_batch, train_mode=False, **kwargs)
             if not isinstance(outputs, dict):
                 raise TypeError('"batch_processor()" or "model.val_step()"'
                                 ' must return a dict')

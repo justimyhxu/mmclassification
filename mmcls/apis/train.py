@@ -75,7 +75,8 @@ def train_model(model,
         optimizer=optimizer,
         work_dir=cfg.work_dir,
         logger=logger,
-        meta=meta)
+        meta=meta,
+        ema_cfg=cfg.get('ema_cfg', None))
     # an ugly walkaround to make the .log and .log.json filenames the same
     runner.timestamp = timestamp
 

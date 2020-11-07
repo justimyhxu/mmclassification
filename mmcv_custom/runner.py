@@ -3,6 +3,7 @@ import os.path as osp
 import mmcv
 from mmcv.runner.utils import obj_from_dict
 from mmcv.runner.checkpoint import save_checkpoint
+from mmcv.runner import load_checkpoint
 import torch
 from .parameters import parameters
 
@@ -54,6 +55,8 @@ class Runner(mmcv.runner.EpochBasedRunner):
         linkpath = osp.join(out_dir, 'latest.pth')
         optimizer = self.optimizer if save_optimizer else None
         save_checkpoint(self.model, filepath, optimizer=optimizer, meta=meta)
+        if self.ema_model is not None:
+            save_checkpoint(self.ema_model, f'{filepath}-ema.pth')
         # use relative symlink
         try:
             mmcv.symlink(filename, linkpath)
@@ -62,6 +65,7 @@ class Runner(mmcv.runner.EpochBasedRunner):
 
     def resume(self, checkpoint, resume_optimizer=True,
                map_location='default', iter_ratio=1):
+        checkpoint_path = checkpoint
         if map_location == 'default':
             device_id = torch.cuda.current_device()
             checkpoint = self.load_checkpoint(
@@ -70,7 +74,10 @@ class Runner(mmcv.runner.EpochBasedRunner):
         else:
             checkpoint = self.load_checkpoint(
                 checkpoint, map_location=map_location)
-
+        if self.ema_model is not None:
+            device_id = torch.cuda.current_device()
+            load_checkpoint(self.ema_model, f'{checkpoint_path}-ema.pth', map_location=lambda storage, loc: storage.cuda(device_id),strict= False,logger=self.logger)  
+            self.logger.info(f'resumed ema-model from {checkpoint_path}-ema.pth')
         self._epoch = checkpoint['meta']['epoch']
         self._iter = checkpoint['meta']['iter'] * iter_ratio
         if 'optimizer' in checkpoint and resume_optimizer:

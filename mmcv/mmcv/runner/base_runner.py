@@ -51,7 +51,8 @@ class BaseRunner(metaclass=ABCMeta):
                  optimizer=None,
                  work_dir=None,
                  logger=None,
-                 meta=None):
+                 meta=None,
+                 ema_cfg=None):
         if batch_processor is not None:
             if not callable(batch_processor):
                 raise TypeError('batch_processor must be callable, '
@@ -94,6 +95,14 @@ class BaseRunner(metaclass=ABCMeta):
                 f'meta must be a dict or None, but got {type(meta)}')
 
         self.model = model
+        self.ema_cfg = ema_cfg
+        if ema_cfg is not None:
+            from copy import deepcopy
+            self.ema_model = deepcopy(self.model)
+            self.ema_model.eval()
+        else:
+            self.ema_model = None 
+
         self.batch_processor = batch_processor
         self.optimizer = optimizer
         self.logger = logger

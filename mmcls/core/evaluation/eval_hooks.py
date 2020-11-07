@@ -64,8 +64,13 @@ class DistEvalHook(EvalHook):
         if not self.every_n_epochs(runner, self.interval):
             return
         from mmcls.apis import multi_gpu_test
+        if runner.ema_cfg is None:
+            model = runner.model
+        else:
+            print('val ema_model')
+            model = runner.ema_model
         results = multi_gpu_test(
-            runner.model,
+            model ,
             self.dataloader,
             tmpdir=osp.join(runner.work_dir, '.eval_hook'),
             gpu_collect=self.gpu_collect,
