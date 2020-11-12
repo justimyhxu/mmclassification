@@ -303,7 +303,7 @@ class ResNetOfficial(nn.Module):
     arch_settings = {
         18: (BasicBlock, (2, 2, 2, 2, 1)),
         34: (BasicBlock, (3, 4, 6, 3)),
-        50: (Bottleneck, (3, 4, 6, 3, 1)),
+        50: (Bottleneck, (3, 4, 6, 3, )),
         101: (Bottleneck, (3, 4, 23, 3)),
         152: (Bottleneck, (3, 8, 36, 3))
     }
@@ -374,8 +374,8 @@ class ResNetOfficial(nn.Module):
                                        dilate=replace_stride_with_dilation[1])
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2,
                                        dilate=replace_stride_with_dilation[2])
-        self.layer5 = self._make_layer(block, 512, layers[4], stride=2,
-                                       dilate=replace_stride_with_dilation[2])
+        # self.layer5 = self._make_layer(block, 512, layers[4], stride=2,
+        #                                dilate=replace_stride_with_dilation[2])
         
         for layer_idx,layer in enumerate(layers):
             layer_idx += 1
@@ -521,7 +521,7 @@ class ResNetOfficial(nn.Module):
         res4 = x
         x = self.layer4(x)
         res5 = x
-        x = self.layer5(x)
+        # x = self.layer5(x)
         res6 = x
        
         # inputs = (res1, res2, res3, res4, res5, res6)
@@ -556,7 +556,7 @@ class ResNetOfficial(nn.Module):
             # group adain
             latent_w = torch.cat([latent_w0, latent_w1, latent_w2], dim=1)
         else:
-            latent_w = init_inputs
+            latent_w = res6 
         # x = self.avgpool(x)
         # x = torch.flatten(x, 1)
         # x = self.fc(x)
@@ -570,7 +570,9 @@ class ResNetOfficial(nn.Module):
         import os
         if int(os.environ.get('debug', 0))==0:
             init_inputs, conv1, bn1, relu1, down1, res1, res2, res3, res4, res5, res6, latent_w =  self._forward_impl(x)
-            res6_gp = F.adaptive_avg_pool2d(res6, (1,1))
+            # res6_gp = F.adaptive_avg_pool2d(res5, (1,1))
+            res6_gp = F.adaptive_avg_pool2d(res5, (2,2))
+            # res6_gp = latent_w
             neck_f = torch.flatten(res6_gp, 1) 
             return neck_f
         else:

@@ -29,16 +29,29 @@ class ClsHead(BaseHead):
         self.compute_accuracy = Accuracy(topk=self.topk)
 
     def loss(self, cls_score, gt_label):
+        if cls_score.shape[0] % 144 == 0 and False:
+            nc = 144
+        elif cls_score.shape[0] % 36 == 0 or True:
+            nc = 36
+        elif cls_score.shape[0] % 10 == 0 or True:
+            nc = 10
+        elif cls_score.shape[0] % 6 == 0:
+            nc = 6
+        cls_score = cls_score.reshape(-1, nc, 1000)
         num_samples = len(cls_score)
         losses = dict()
         # compute loss
-        loss = self.compute_loss(cls_score, gt_label, avg_factor=num_samples)
+        loss = self.compute_loss(cls_score.mean(dim=1), gt_label, avg_factor=num_samples)
         # compute accuracy
+        cls_score = cls_score.softmax(dim=-1)
+        cls_score = cls_score.mean(dim=1)
         acc = self.compute_accuracy(cls_score, gt_label)
         assert len(acc) == len(self.topk)
         losses['loss'] = loss
         losses['accuracy'] = {f'top-{k}': a for k, a in zip(self.topk, acc)}
         losses['num_samples'] = loss.new(1).fill_(num_samples)
+        losses['cls_score'] = cls_score
+        losses['label'] = gt_label
         return losses
 
     def forward_train(self, cls_score, gt_label):

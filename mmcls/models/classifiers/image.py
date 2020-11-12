@@ -52,7 +52,12 @@ class ImageClassifier(BaseClassifier):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
-        x = self.extract_feat(img)
+        # import ipdb
+        # ipdb.set_trace()
+        ncrop = img.shape[2] // 224
+        img_crop = img.reshape(img.shape[0], 3, ncrop, 224, 224)
+        img_crop = img_crop.permute(0,2, 1,3,4).reshape(-1,3,224,224)
+        x = self.extract_feat(img_crop)
 
         losses = dict()
         loss = self.head.forward_train(x, gt_label)

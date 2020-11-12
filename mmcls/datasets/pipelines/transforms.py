@@ -4,7 +4,7 @@ import random
 import mmcv
 import numpy as np
 import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from PIL import Image
 import cv2
 from ..builder import PIPELINES
@@ -372,13 +372,36 @@ class Resize(object):
 
     def _resize_img(self, results):
         for key in results.get('img_fields', ['img']):
-            img = mmcv.imresize(
-                results[key],
-                size=(self.width, self.height),
-                interpolation=self.interpolation,
-                return_scale=False)
+            img = results[key]
+            h, w = img.shape[:2]
+            short_side = self.size[0]
+            ignore_resize = False
+            if (w <= h and w == short_side) or (h <= w
+                                                and h == short_side):
+                ignore_resize = True
+            else:
+                if w < h:
+                    width = short_side
+                    height = int(short_side * h / w)
+                else:
+                    height = short_side
+                    width = int(short_side * w / h)
+            if not ignore_resize:
+                img = mmcv.imresize(
+                    img,
+                    size=(width, height),
+                    interpolation=self.interpolation,
+                    return_scale=False,
+                    )
             results[key] = img
             results['img_shape'] = img.shape
+            # img = mmcv.imresize(
+            #     results[key],
+            #     size=(self.width, self.height),
+            #     interpolation=self.interpolation,
+            #     return_scale=False)
+            # results[key] = img
+            # results['img_shape'] = img.shape
 
     def __call__(self, results):
         self._resize_img(results)
@@ -431,6 +454,211 @@ class CenterCrop(object):
 
     def __repr__(self):
         return self.__class__.__name__ + f'(crop_size={self.crop_size})'
+
+@PIPELINES.register_module()
+class ThreeCrop(object):
+    def __init__(self, crop_size):
+        self.crop_size = crop_size if not isinstance(
+            crop_size, int) else (crop_size, crop_size)
+
+    def __call__(self, results):
+        for key in results.get('img_fields', ['img']):
+            img = results[key]
+            image_h = img.shape[0]
+            image_w = img.shape[1]
+            crop_w, crop_h = self.crop_size
+            assert crop_h == image_h or crop_w == image_w
+
+            if crop_h == image_h:
+                w_step = (image_w - crop_w) // 2
+                offsets = list()
+                offsets.append((0, 0))  # left
+                offsets.append((2 * w_step, 0))  # right
+                offsets.append((w_step, 0))  # middle
+            elif crop_w == image_w:
+                h_step = (image_h - crop_h) // 2
+                offsets = list()
+                offsets.append((0, 0))  # top
+                offsets.append((0, 2 * h_step))  # down
+                offsets.append((0, h_step))  # middle
+
+            oversample_group = list()
+            for o_w, o_h in offsets:
+                crop = mmcv.imcrop(img, np.array(
+                    [o_w, o_h, o_w + crop_w - 1, o_h + crop_h - 1]))
+                oversample_group.append(crop)
+                flip_crop = mmcv.imflip(crop)
+                oversample_group.append(flip_crop)
+                # if is_flow and i % 2 == 0:
+                #     flip_group.append(mmcv.iminvert(flip_crop))
+                # else:
+                #     flip_group.append(flip_crop)
+
+                # oversample_group.extend(normal_group)
+                # oversample_group.extend(flip_group)
+            img_crops = np.concatenate(oversample_group, axis=0)
+            results[key] = img_crops
+            img_shape = img_crops.shape
+        results['img_shape'] = img_shape 
+        return results
+
+
+@PIPELINES.register_module()
+class TenCrop:
+    """Crop the images into 10 crops (corner + center + flip).
+    Crop the four corners and the center part of the image with the same
+    given crop_size, and flip it horizontally.
+    Required keys are "imgs", "img_shape", added or modified keys are "imgs",
+    "crop_bbox" and "img_shape".
+    Args:
+        crop_size(int | tuple[int]): (w, h) of crop size.
+    """
+
+    def __init__(self, crop_size):
+        if isinstance(crop_size, int):
+            crop_size = (crop_size, crop_size)
+        assert crop_size[0] > 0 and crop_size[1] > 0
+        self.crop_size = crop_size
+
+    def __call__(self, results):
+        """Performs the TenCrop augmentation.
+        Args:
+            results (dict): The resulting dict to be modified and passed
+                to the next transform in pipeline.
+        """
+        for key in results.get('img_fields', ['img']):
+            img = results[key]
+
+            img_h, img_w = img.shape[:2]
+            crop_w, crop_h = self.crop_size
+
+            w_step = (img_w - crop_w) // 4
+            h_step = (img_h - crop_h) // 4
+
+            offsets = [
+                (0, 0),  # upper left
+                (4 * w_step, 0),  # upper right
+                (0, 4 * h_step),  # lower left
+                (4 * w_step, 4 * h_step),  # lower right
+                (2 * w_step, 2 * h_step),  # center
+            ]
+
+            img_crops = list()
+            crop_bboxes = list()
+            for x_offset, y_offsets in offsets:
+                crop = img[y_offsets:y_offsets + crop_h, x_offset:x_offset + crop_w]
+                flip_crop = np.flip(crop, axis=1).copy() 
+                img_crops.append(crop)
+                img_crops.append(flip_crop)
+            img_crops = np.concatenate(img_crops, axis=0)
+            results[key] = img_crops
+            img_shape = img_crops.shape
+        results['img_shape'] = img_shape 
+
+        return results
+
+    def __repr__(self):
+        repr_str = f'{self.__class__.__name__}(crop_size={self.crop_size})'
+        return repr_str
+
+
+@PIPELINES.register_module()
+class ThreeTenCrop(object):
+    def __init__(self, crop_size):
+        self.crop_size = crop_size if not isinstance(
+            crop_size, int) else (crop_size, crop_size)
+
+    def __call__(self, results):
+        for key in results.get('img_fields', ['img']):
+            img = results[key]
+            
+            ms_imgs = []
+            # for short_side in [256,288,320,352]:
+            for short_side in [256,]:
+                h, w = img.shape[:2]
+                # short_side = self.size[0]
+                ignore_resize = False
+                if (w <= h and w == short_side) or (h <= w
+                                                    and h == short_side):
+                    ignore_resize = True
+                else:
+                    if w < h:
+                        width = short_side
+                        height = int(short_side * h / w)
+                    else:
+                        height = short_side
+                        width = int(short_side * w / h)
+                if not ignore_resize:
+                    s_img = mmcv.imresize(
+                        img,
+                        size=(width, height),
+                        interpolation='bilinear',
+                        return_scale=False,
+                        )
+                else: 
+                    s_img = img
+
+                image_h = s_img.shape[0]
+                image_w = s_img.shape[1]
+                crop_w, crop_h = short_side, short_side 
+                assert crop_h == image_h or crop_w == image_w
+
+                if crop_h == image_h:
+                    w_step = (image_w - crop_w) // 2
+                    offsets = list()
+                    offsets.append((0, 0))  # left
+                    offsets.append((2 * w_step, 0))  # right
+                    offsets.append((w_step, 0))  # middle
+                elif crop_w == image_w:
+                    h_step = (image_h - crop_h) // 2
+                    offsets = list()
+                    offsets.append((0, 0))  # top
+                    offsets.append((0, 2 * h_step))  # down
+                    offsets.append((0, h_step))  # middle
+
+                oversample_group = list()
+                for o_w, o_h in offsets:
+                    crop = mmcv.imcrop(s_img, np.array(
+                        [o_w, o_h, o_w + crop_w - 1, o_h + crop_h - 1]))
+                    oversample_group.append(crop)
+                    # flip_crop = mmcv.imflip(crop)
+                    # oversample_group.append(flip_crop)
+            
+                img_h, img_w = oversample_group[0].shape[:2]
+                crop_w, crop_h = 224,224 
+
+                w_step = (img_w - crop_w) // 4
+                h_step = (img_h - crop_h) // 4
+
+                offsets = [
+                    (0, 0),  # upper left
+                    (4 * w_step, 0),  # upper right
+                    (0, 4 * h_step),  # lower left
+                    (4 * w_step, 4 * h_step),  # lower right
+                    (2 * w_step, 2 * h_step),  # center
+                ]
+
+                for imgx in oversample_group:
+                    for x_offset, y_offsets in offsets:
+                        crop = imgx[y_offsets:y_offsets + crop_h, x_offset:x_offset + crop_w]
+                        flip_crop = np.flip(crop, axis=1).copy() 
+                        ms_imgs.append(crop)
+                        ms_imgs.append(flip_crop)
+                    resize_img = mmcv.imresize(imgx ,(224,224))
+                    flip_resize_img = np.flip(resize_img, axis=1).copy()
+                    ms_imgs.append(resize_img)
+                    ms_imgs.append(flip_resize_img)
+            img_crops = ms_imgs
+            img_crops = np.concatenate(img_crops, axis=0)
+            results[key] = img_crops
+            img_shape = img_crops.shape
+        results['img_shape'] = img_shape 
+
+        return results
+
+    def __repr__(self):
+        repr_str = f'{self.__class__.__name__}(crop_size={self.crop_size})'
+        return repr_str
 
 
 @PIPELINES.register_module()

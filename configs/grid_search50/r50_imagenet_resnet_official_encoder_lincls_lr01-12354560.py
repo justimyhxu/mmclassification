@@ -5,7 +5,7 @@ _base_ = [
 
 model = dict(
     type='ImageClassifier',
-    pretrained='data/resnet50-encoder-pretrained.pth',
+    pretrained='data/resnet50-encoder-pretrained-12354560.pth',
     frozen_backbone=True,
     backbone=dict(
         type='ResNetOfficial',
@@ -57,7 +57,7 @@ data = dict(
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        data_prefix='data/imagenet/val/',
+        data_prefix='data/imagenet/val',
         ann_file='data/imagenet/meta/val_map.txt',
         pipeline=test_pipeline),
     test=dict(

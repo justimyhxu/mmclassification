@@ -97,9 +97,14 @@ def main():
                     results[topk] = []
                 results[topk].append(v.item())
         assert sum(nums) == len(dataset)
-        for topk, accs in results.items():
-            avg_acc = np.average(accs, weights=nums)
-            print(f'\n{topk} accuracy: {avg_acc:.2f}')
+        ph = (args.checkpoint).split('/')[-1]
+        print(ph)
+        with open(f'work_dirs/results/{ph}.txt', 'w') as ff:
+            for topk, accs in results.items():
+                avg_acc = np.average(accs, weights=nums)
+                print(f'\n{topk} accuracy: {avg_acc:.2f}')
+                ff.write(f'\n{topk} accuracy: {avg_acc:.2f}')
+                  
     if args.out and rank == 0:
         print(f'\nwriting results to {args.out}')
         mmcv.dump(outputs, args.out)
